@@ -15,7 +15,7 @@ class Room(models.Model):
     host = models.ForeignKey(User , on_delete=models.SET_NULL , null=True)
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True) #On deleting the topic the room associated with it don't get deleted from the database
     name = models.CharField(max_length=200)
-    description = models.TextField(null=True, blank = True)#null=True means user keep this field empty
+    description = models.TextField(null=True, blank = True)#null=True means user  can keep this field empty
                                                             #blank = True means when the form is submit the form can be empty and can be updated later.
     # participants =
     updated = models.DateTimeField(auto_now=True) # Takes time stamp every time a user submits or saves.
