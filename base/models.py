@@ -17,7 +17,7 @@ class Room(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(null=True, blank = True)#null=True means user  can keep this field empty
                                                             #blank = True means when the form is submit the form can be empty and can be updated later.
-    # participants =
+    participants =models.ManyToManyField(User, related_name="participants", blank = True)
     updated = models.DateTimeField(auto_now=True) # Takes time stamp every time a user submits or saves.
     created = models.DateTimeField(auto_now_add=True) #  Takes time stamp when we first submit or save(created time).
 
@@ -35,6 +35,9 @@ class Message(models.Model):
     body = models.TextField()
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-updated', '-created']
 
     def __str__(self):
         return self.body[:50]

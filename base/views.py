@@ -1,11 +1,12 @@
 from django.shortcuts import render ,redirect
+from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpResponse
 from django.contrib.auth import authenticate , login, logout
 from django.contrib import messages #To throw in messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q #Allows Relational operations.
-from .models import Room ,Topic #Room refers to the model name(class name).
+from .models import Room ,Topic , Message #Room refers to the model name(class name).
 from .forms import RoomForm #importing from form.py file
 
 
@@ -19,11 +20,12 @@ from .forms import RoomForm #importing from form.py file
 # ]
 
 def loginPage(request):
+    page = 'login'
     if request.user.is_authenticated:
         return redirect('home')
     #Checks whether user exits else throws error message
     if request.method=="POST":
-        username = request.POST.get('username')
+        username = request.POST.get('username').lower()
         password = request.POST.get('password')
         try:
             user = User.objects.get(username=username)
@@ -38,12 +40,27 @@ def loginPage(request):
             messages.error(request , "Username or Password does not exist")
         
             
-    context = {}
+    context = {'page':page}
     return render(request , 'base/login_register.html', context)
 
 def logoutUser(request):
     logout(request)
     return redirect('home')
+
+def registerPage(request):
+    form = UserCreationForm()
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.username  = user.username.lower()
+            user.save()
+            login(request, user)
+            return redirect('home')
+        else:
+            messages.error(request , "An error occured during registration.")
+
+    return render(request , 'base/login_register.html',{'form':form})
 
 def home(request):
     q = request.GET.get('q') if request.GET.get('q')!=None else ''
@@ -57,16 +74,39 @@ def home(request):
 
     topics = Topic.objects.all()
     room_count = rooms.count() #we can also use len(rooms) 
+    room_messages = Message.objects.filter(Q(room__topic__name__icontains=q))
 
 
-    context = {'rooms': rooms, 'topics':topics , 'room_count':room_count}
+    context = {'rooms': rooms, 'topics':topics , 'room_count':room_count , 'room_messages':room_messages}
     return render(request , 'base/home.html',context) #render takes in the request from the server and access the templates that is required
 
 
 def room(request, pk):
-    room = Room.objects.get(id=pk) #Returns the room of the specified id 
-    context = {'room': room} #When the link is clicked the room associated with it is displayed on the window
+    room = Room.objects.get(id=pk) #Returns the room of the specified id
+    room_messages = room.message_set.all()#set of messages related to a particular room(Messages Class).
+    participants = room.participants.all()
+
+    if request.method=="POST":
+        message = Message.objects.create(
+            user = request.user,
+            room = room,
+            body = request.POST.get('body'),
+        )
+        room.participants.add(request.user) #User will added to many to many field.
+        return redirect('room', pk=room.id)
+
+    context = {'room': room, 'room_messages':room_messages, 'participants': participants} #When the link is clicked the room associated with it is displayed on the window
     return render(request, "base/room.html", context) #Displays the templates on the browser window.
+
+def userProfile(request ,pk):
+    user = User.objects.get(id = pk)
+    rooms=  user.room_set.all()
+    room_messages = user.message_set.all() 
+    topics  = Topic.objects.all()
+    context = {'user':user , 'rooms':rooms ,'room_messages':room_messages, 'topics':topics,}
+    return render(request , 'base/profile.html', context)
+
+
 
 @login_required(login_url='login') #decorator allows only logged in users to create rooms(crud).
 def createRoom(request):
@@ -107,3 +147,27 @@ def deleteRoom(request, pk):
     if request.user!=room.host:
         return HttpResponse("You can only delete your room.")
     return render(request, 'base/delete.html', {'obj':room})
+
+
+@login_required(login_url='login')
+def deleteMessage(request, pk):
+    message = Message.objects.get(id=pk)
+    room = Room.objects.get(id=pk) 
+    if request.user!=message.user:
+        return HttpResponse("You can only delete your message.")
+    if request.method=="POST":
+        message.delete()
+        return redirect('room' , pk = room.id)
+  
+    return render(request, 'base/delete.html', {'obj':message})
+
+@login_required(login_url='login')
+def deleteMessageActivity(request, pk):
+    message = Message.objects.get(id=pk)
+    if request.user!=message.user:
+        return HttpResponse("You can only delete your message.")
+    if request.method=="POST":
+        message.delete()
+        return redirect('home')
+  
+    return render(request, 'base/delete.html', {'obj':message}) 
