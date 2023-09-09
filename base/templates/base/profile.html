@@ -1,6 +1,7 @@
 {% extends 'main.html' %}
 
 {% block content %}
+{% load static %}
   <main class="profile-page layout layout--3">
     <div class="container">
       <!-- Topics Start -->
@@ -9,10 +10,11 @@
 
       <!-- Room List Start -->
       <div class="roomList">
+
         <div class="profile">
           <div class="profile__avatar">
             <div class="avatar avatar--large active">
-              <img src="https://randomuser.me/api/portraits/men/11.jpg" />
+              <img src="{% static 'images/avatar.svg' %}" />
             </div>
           </div>
           <div class="profile__info">
@@ -20,20 +22,17 @@
             <p>@{{user.username}}</p>
           {% if request.user == user %}
             <a href="{% url 'update-user' %}" class="btn btn--main btn--pill">Edit Profile</a>
+            {% endif %}
           </div>
-          {% endif %}
+        
           <div class="profile__about">
-            <h3>About</h3>
+            <h3></h3> <!--about section-->
             <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequuntur illo tenetur
-              facilis sunt nemo debitis quisquam hic atque aut? Ducimus alias placeat optio
-              accusamus repudiandae quis ab ex exercitationem rem?
             </p>
           </div>
         </div>
-
         <div class="roomList__header">
-          <div>
+          <div class = "profilerooms">
             <h2>Study Rooms Hosted by {{user.username}}</a>
             </h2>
           </div>

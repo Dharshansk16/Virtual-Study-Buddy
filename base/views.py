@@ -72,7 +72,7 @@ def home(request):
     #We can also use .get(), .filter(), .exclude() do get specified objects/data.
 
 
-    topics = Topic.objects.all()
+    topics = Topic.objects.all()[0:5]
     room_count = rooms.count() #we can also use len(rooms) 
     room_messages = Message.objects.filter(Q(room__topic__name__icontains=q))
 
@@ -172,12 +172,11 @@ def deleteRoom(request, pk):
 @login_required(login_url='login')
 def deleteMessage(request, pk):
     message = Message.objects.get(id=pk)
-    room = Room.objects.get(id=pk) 
     # if request.user!=message.user:
     #     return HttpResponse("You can only delete your message.")
     if request.method=="POST":
         message.delete()
-        return redirect('room' , pk = room.id)
+        return redirect('room' , pk =message.room.id)
   
     return render(request, 'base/delete.html', {'obj':message})
 
@@ -209,3 +208,14 @@ def updateUser(request):
     return render(request , 'base/update-user.html' , context )
 
 
+def topicsPage(request):
+    q = request.GET.get('q') if request.GET.get('q')!=None else ''
+    topics = Topic.objects.filter(name__icontains=q)
+    context = {'topics':topics}
+    return render(request, 'base/topics.html' ,context)
+
+
+def activitiesPage(request):
+    room_messages = Message.objects.all()
+    context = {"room_messages":room_messages}
+    return render(request , 'base/activity.html' , context)
